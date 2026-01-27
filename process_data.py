@@ -3,6 +3,7 @@ import sys
 import numpy as np
 import keras
 import pandas as pd
+import matplotlib.pyplot as plt
 
 from google.colab import drive
 drive.mount('/content/drive')
@@ -17,6 +18,22 @@ from apodize import *
 from logwave import Logwave as lw
 from logwave import log_rebin
 
+host_types = ["elliptical", "s0", "sa", "sb", "sc", "starb1", "starb1", "starb2", "starb3", "starb4", "starb5", "starb6"]
+# needs to go longest to shortest so it doesnt find II instead of IIb
+# there's Iap?? not mentioned in paper
+
+sn_class_dict = {"IIb": "IIb", 
+                 "IIn": "IIn", 
+                 "II_": "II", 
+                 "Iap": "Iap", 
+                 "Ia_": "Ia", 
+                 "Ic_": "Ic", 
+                 "Ib_": "Ib", 
+                 "SL_": "SL", 
+                 "TDE": "TDE", 
+                 "CRT": "CaRT"}
+
+                 
 def get_host_sn_type(fileinfo):
   """Extracts the host morphology and true SN class from the filename.
   filename format: [Host Morphology][True SN Class]Smag...
@@ -116,6 +133,7 @@ def simplified_process_spectrum(wave, flux): #-> Dict:
         'fmean': fmean,
         'nknot': nknot
     }
+    return output
 
 def process_files(filename, wmin, wmax, plot_spectra = True, verbose = True):
 

@@ -5,15 +5,13 @@ import keras
 import pandas as pd
 import matplotlib.pyplot as plt
 
-from google.colab import drive
-drive.mount('/content/drive')
 
-sys.path.insert(0, "content/drive/MyDrive/ABC-SN/code")
+sys.path.insert(0, "/lustre/lrspec/users/4301/ABC-SN/code")
 from data_degrading import degrade_spectrum
 import abcsn_training
 import abcsn_config
 
-sys.path.insert(0, "/content/drive/MyDrive/snidpy/sourcepy")
+sys.path.insert(0, "/lustre/lrspec/users/4301/snidpy/sourcepy")
 from apodize import *
 from logwave import Logwave as lw
 from logwave import log_rebin

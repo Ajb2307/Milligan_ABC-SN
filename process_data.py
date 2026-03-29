@@ -16,6 +16,8 @@ from apodize import *
 from logwave import Logwave as lw
 from logwave import log_rebin
 
+lw.mean_zero = meanzero # wonder if this will fix annoying print
+
 host_types = ["elliptical", "s0", "sa", "sb", "sc", "starb1", "starb1", "starb2", "starb3", "starb4", "starb5", "starb6"]
 # needs to go longest to shortest so it doesnt find II instead of IIb
 # there's Iap?? not mentioned in paper

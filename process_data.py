@@ -86,7 +86,8 @@ def get_filename_info(filename):
 
 
 def simplified_process_spectrum(wave, flux): #-> Dict:
-    """Process all epochs for a supernova."""
+    """Process all epochs for a supernova.
+      from snidpy repo process_spectrum but simplified to take data not file"""
 
     from logwave import SNIDConfig
 
@@ -123,7 +124,7 @@ def simplified_process_spectrum(wave, flux): #-> Dict:
     
     # Calculate mean flux for scaling
     fmean = np.mean(flog)
-    flog = flog / fmean
+    # flog = flog / fmean
     
     # Prepare output
     output = {
@@ -135,6 +136,7 @@ def simplified_process_spectrum(wave, flux): #-> Dict:
     }
     return output
 
+# used to process milligan files 
 def process_files(filename, wmin, wmax, plot_spectra = True, verbose = True):
 
   try:
@@ -175,6 +177,7 @@ def process_files(filename, wmin, wmax, plot_spectra = True, verbose = True):
     # select correct range
     select = (wlog0 < wmin) | (wlog0 > wmax)
 
+    ## this doesnt seem to do anything
     # normalize log flux
     flog = (flog - flog[~select].mean()) / flog[~select].std()
     flog[select] = 0
@@ -202,5 +205,67 @@ def process_files(filename, wmin, wmax, plot_spectra = True, verbose = True):
   except Exception as e:
     print(filename, "FAILED")
     print(e)
+
+
+# used to try and reprocess abcsn data
+def process_data(X, wvl, wmin, wmax, plot_spectra = True, verbose = True, snidify = True, R =100):
+
+    wave, flux = wvl, X
+    # Apply wavelength mask
+    mask = (wave >= wmin) & (wave <= wmax)
+    wave, flux = wave[mask], flux[mask]
+    sp = wave, flux
+    
+    if plot_spectra:
+      plt.plot(sp[0], sp[1], 'k-.', alpha=0.5)
+      plt.show()
+    if verbose:
+      print("READ IN OK")
+
+    if snidify == True:
+      # Process the spectrum using logwave (lw) module functions
+      processedsn = simplified_process_spectrum(wave, flux)
+      if verbose:
+        print("processed")
+      # print(processedsn)
+      
+      # Extract and normalize flux values
+      # this is adjusting the wavelength bins to take the center value
+      wlog0 = processedsn["wlog"][0:-1] + np.diff(processedsn["wlog"]) / 2
+      flog = processedsn["fnorm"]
+      # print(flog.mean())
+    
+    if snidify == False:
+      processedsn = simplified_process_spectrum(wave, flux)
+      wlog0 = processedsn["wlog"][0:-1] + np.diff(processedsn["wlog"]) / 2
+      flog = processedsn["flog"]
+      # print(flog.mean())
+
+    # select correct range
+    select = (wlog0 < wmin) | (wlog0 > wmax)
+
+    # normalize log flux
+    flog = (flog - flog[~select].mean()) / flog[~select].std()
+    flog[select] = 0
+
+    # Degrade the spectrum
+    spd = degrade_spectrum(R,
+        wlog0,
+        flog
+        )
+
+    # Plot the processed and degraded spectra
+    if plot_spectra:
+      # plt.title(name)
+      plt.plot(wlog0, flog)
+      plt.plot(spd[1], spd[2])
+
+    # return processed spectrum data and extract metadata
+    X = np.array([spd[2]])
+    X = X.reshape(1,X.shape[1])
+
+    wvl = spd[1]
+
+    return wvl, X
 
   

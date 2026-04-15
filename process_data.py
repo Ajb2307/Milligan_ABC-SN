@@ -137,7 +137,7 @@ def simplified_process_spectrum(wave, flux): #-> Dict:
     return output
 
 # used to process milligan files 
-def process_files(filename, wmin, wmax, plot_spectra = True, verbose = True):
+def process_files(filename, wmin, wmax, plot_spectra = True, verbose = True,  snidify = True, R =100):
 
   try:
     sep = " " # Define separator for reading data
@@ -162,17 +162,23 @@ def process_files(filename, wmin, wmax, plot_spectra = True, verbose = True):
       print("READ IN OK")
 
 
-    # Process the spectrum using logwave (lw) module functions
-    processedsn = simplified_process_spectrum(wave, flux)
-    if verbose:
-      print("processed")
-    # print(processedsn)
-    
-    # Extract and normalize flux values
-    # this is adjusting the wavelength bins to take the center value
-    wlog0 = processedsn["wlog"][0:-1] + np.diff(processedsn["wlog"]) / 2
-    flog = processedsn["fnorm"]
-    # print(flog.mean())
+    if snidify == True: # removes the continuum using 13(?) degree polynomial 
+      # Process the spectrum using logwave (lw) module functions
+      processedsn = simplified_process_spectrum(wave, flux)
+      if verbose:
+        print("processed")
+      # print(processedsn)
+      
+      # Extract and normalize flux values
+      # this is adjusting the wavelength bins to take the center value
+      wlog0 = processedsn["wlog"][0:-1] + np.diff(processedsn["wlog"]) / 2
+      flog = processedsn["fnorm"]
+
+
+    if snidify == False: # does not remove continuum
+      processedsn = simplified_process_spectrum(wave, flux)
+      wlog0 = processedsn["wlog"][0:-1] + np.diff(processedsn["wlog"]) / 2
+      flog = processedsn["flog"]
 
     # select correct range
     select = (wlog0 < wmin) | (wlog0 > wmax)
@@ -183,7 +189,7 @@ def process_files(filename, wmin, wmax, plot_spectra = True, verbose = True):
     flog[select] = 0
 
     # Degrade the spectrum
-    spd = degrade_spectrum(100,
+    spd = degrade_spectrum(R,
         wlog0,
         flog
         )

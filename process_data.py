@@ -10,6 +10,7 @@ sys.path.insert(0, "/lustre/lrspec/users/4301/ABC-SN/code")
 from data_degrading import degrade_spectrum
 import abcsn_training
 import abcsn_config
+from preprocessing import preproccess_dataframe
 
 sys.path.insert(0, "/lustre/lrspec/users/4301/snidpy/sourcepy")
 from apodize import *
@@ -85,193 +86,98 @@ def get_filename_info(filename):
   return host, sn_type, redshift, Smag, Gmag
 
 
-def simplified_process_spectrum(wave, flux): #-> Dict:
-    """Process all epochs for a supernova.
-      from snidpy repo process_spectrum but simplified to take data not file"""
+# used:
+# abcsn_config.SN_Stypes_int_to_str replaced with ABC_subtype_id_to_str
+# to make the dictionary corresponding to the labels used above
+# may just want to change the above to use the same strings as int_to_str function
+ABC_subtype_id_to_str = {
+    0: "Ia-norm",
+    1: "Ia-91T",
+    2: "Ia-91bg",
+    3: "Iax",
+    4: "Ib-norm",
+    5: "Ibn",
+    6: "IIb",
+    7: "Ic-norm",
+    8: "Ic-broad",
+    9: "IIP",
+}
 
-    from logwave import SNIDConfig
-
-    # Initialize arrays
-    nw = SNIDConfig().nw
-    flog = np.zeros(nw)
-    fnorm = np.zeros(nw)
-    fmean = [0]
-    nknot = np.zeros(1, dtype=int)
-    
-    # Setup log wavelength grid
-    dwlog = np.log(SNIDConfig().w1 / SNIDConfig().w0) / nw
-    wlog = SNIDConfig().w0 * np.exp(np.arange(nw + 1) * dwlog)
-    
-    # Process each epoch
-    most_knots = 0
-    # Read spectrum
-    
-    
-    assert len(wave) > 0, "no data"
-        
-    
-    # Rebin to log scale
-    flog = log_rebin(wave, flux, nw, SNIDConfig().w0, SNIDConfig().w1)
-    
-    # Normalize (remove continuum)
-    fnorm, l1, l2, nknot, xknot, yknot = meanzero(flog)
-    #print("here", fnorm)
-    most_knots = max(most_knots, nknot)
-    
-    # Apodize
-    #fnorm = apodize(fnorm, 10,
-    #                      -10, self.config.percent)
-    
-    # Calculate mean flux for scaling
-    fmean = np.mean(flog)
-    # flog = flog / fmean
-    
-    # Prepare output
-    output = {
-        'wlog': wlog,
-        'flog': flog,
-        'fnorm': fnorm,
-        'fmean': fmean,
-        'nknot': nknot
-    }
-    return output
-
-# used to process milligan files 
-def process_files(filename, wmin, wmax, plot_spectra = True, verbose = True,  snidify = True, R =100):
-
-  try:
-    sep = " " # Define separator for reading data
-    s = pd.read_csv(filename, sep=sep, header=None, comment="#") # Read the spectrum data
-    if plot_spectra:
-      display(s.head())
-    
-    # Read and plot the original spectrum
-    wave, flux = s[0], s[1]
-    # Apply wavelength mask
-    mask = (wave >= wmin) & (wave <= wmax)
-    wave, flux = wave[mask], flux[mask]
-    sp = wave, flux
-    
-    if plot_spectra:
-      name = filename.split("/")[-1]
-      s.plot(x=0, y=1)
-      plt.title(name)
-      plt.plot(sp[0], sp[1], 'k-.', alpha=0.5)
-      plt.show()
-    if verbose:
-      print("READ IN OK")
+subtype_to_ABC_ID= {
+     'Ia-norm': 0,
+     'Ia-91T': 1,
+     'Ia-csm': None,
+     'Ia-91bg': 2,
+     'Ib-norm':4,
+     'Iax':3,
+     'Ia-pec': None,
+     'Ic-norm':7,
+     'IIP':9,
+     'IIL': None,
+     'IIb':6,
+     'II-pec': None, ### ?
+     'Ic-broad':8,
+     'Ic-pec': None,
+     'IIn': None,
+     'Ibn': 5,
+     'Ib-pec': None,
+}
 
 
-    if snidify == True: # removes the continuum using 13(?) degree polynomial 
-      # Process the spectrum using logwave (lw) module functions
-      processedsn = simplified_process_spectrum(wave, flux)
-      if verbose:
-        print("processed")
-      # print(processedsn)
-      
-      # Extract and normalize flux values
-      # this is adjusting the wavelength bins to take the center value
-      wlog0 = processedsn["wlog"][0:-1] + np.diff(processedsn["wlog"]) / 2
-      flog = processedsn["fnorm"]
 
+ABC_ID_dict ={"Ia": 0,
+          "Iap": 0,
+          "Ic": 7,
+          "Ib": 4,
+          "II": 9, # IIP = type 2 plateau = normal
+          "IIb": 6,
+          "IIn": 9,
+          "SL": None,
+          "TDE": None,
+          "CRT": None
+          }
 
-    if snidify == False: # does not remove continuum
-      processedsn = simplified_process_spectrum(wave, flux)
-      wlog0 = processedsn["wlog"][0:-1] + np.diff(processedsn["wlog"]) / 2
-      flog = processedsn["flog"]
+Mill_ID_dict ={"Ia": 0,
+          "Iap": 0,
+          "Ic": 1,
+          "Ib": 1,
+          "II": 2, # IIP = type 2 plateau = normal
+          "IIb": 1,
+          "IIn": 2,
+          "SL": 3,
+          "TDE": 4,
+          "CRT": 4
+          }
 
-    # select correct range
-    select = (wlog0 < wmin) | (wlog0 > wmax)
+# five types recorded in Milligan et al.
+Mill_types_to_int = {0: "Ia",
+                     1: "Ib & Ic",
+                     2: "II",
+                     3: "SLSN",
+                     4: "Non-SN",
+                     5: "other"
+                     }
 
-    ## this doesnt seem to do anything
-    # normalize log flux
-    flog = (flog - flog[~select].mean()) / flog[~select].std()
-    flog[select] = 0
+# convert ABC types to Mill categories
+ABC_to_Mill ={0:0,   # Ia-norm -> Ia
+              1:0,   # Ia-91T -> Ia
+              2:0,   # Ia-91bg -> Ia
+              3:0,   # Iax -> Ia
+              4:1,   # Ib-norm -> Ib & Ic
+              5:1,   # Ibn -> Ib & Ic
+              6:1,   # IIb -> Ib & Ic
+              7:1,  # Ic-norm -> Ib & Ic
+              8:1,  # Ic-broad -> Ib & Ic
+              9:2,  # IIP -> II
+            }
 
-    # Degrade the spectrum
-    spd = degrade_spectrum(R,
-        wlog0,
-        flog
-        )
+def get_ABC_Mill_type(SN_subtype_str):
+    """Converts ABC type to Milligan category."""
+    try:
+      ABC_ID = ABC_ID_dict[SN_subtype_str]
+      Mill_ID = Mill_ID_dict[SN_subtype_str]
+      return ABC_ID, Mill_ID
 
-    # Plot the processed and degraded spectra
-    if plot_spectra:
-      plt.title(name)
-      plt.plot(wlog0, flog)
-      plt.plot(spd[1], spd[2])
-
-    # return processed spectrum data and extract metadata
-    X = np.array([spd[2]])
-    X = X.reshape(1,X.shape[1])
-
-    wvl = spd[1]
-
-    return wvl, X
- 
-  except Exception as e:
-    print(filename, "FAILED")
-    print(e)
-
-
-# used to try and reprocess abcsn data
-def process_data(X, wvl, wmin, wmax, plot_spectra = True, verbose = True, snidify = True, R =100):
-
-    wave, flux = wvl, X
-    # Apply wavelength mask
-    mask = (wave >= wmin) & (wave <= wmax)
-    wave, flux = wave[mask], flux[mask]
-    sp = wave, flux
-    
-    if plot_spectra:
-      plt.plot(sp[0], sp[1], 'k-.', alpha=0.5)
-      plt.show()
-    if verbose:
-      print("READ IN OK")
-
-    if snidify == True:
-      # Process the spectrum using logwave (lw) module functions
-      processedsn = simplified_process_spectrum(wave, flux)
-      if verbose:
-        print("processed")
-      # print(processedsn)
-      
-      # Extract and normalize flux values
-      # this is adjusting the wavelength bins to take the center value
-      wlog0 = processedsn["wlog"][0:-1] + np.diff(processedsn["wlog"]) / 2
-      flog = processedsn["fnorm"]
-      # print(flog.mean())
-    
-    if snidify == False:
-      processedsn = simplified_process_spectrum(wave, flux)
-      wlog0 = processedsn["wlog"][0:-1] + np.diff(processedsn["wlog"]) / 2
-      flog = processedsn["flog"]
-      # print(flog.mean())
-
-    # select correct range
-    select = (wlog0 < wmin) | (wlog0 > wmax)
-
-    # normalize log flux
-    flog = (flog - flog[~select].mean()) / flog[~select].std()
-    flog[select] = 0
-
-    # Degrade the spectrum
-    spd = degrade_spectrum(R,
-        wlog0,
-        flog
-        )
-
-    # Plot the processed and degraded spectra
-    if plot_spectra:
-      # plt.title(name)
-      plt.plot(wlog0, flog)
-      plt.plot(spd[1], spd[2])
-
-    # return processed spectrum data and extract metadata
-    X = np.array([spd[2]])
-    X = X.reshape(1,X.shape[1])
-
-    wvl = spd[1]
-
-    return wvl, X
-
-  
+    except Exception as e:
+      print(SN_subtype_str)
+      raise e

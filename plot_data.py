@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-def plot_cm(cm, classes, figsize=(10, 10), title=False):
+def plot_cm(cm, classes, figsize=(10, 10), title=False, normalize=True):
     ''' Code sent to me by Fed created by Willow to plot confusion matrix
     '''
     # I removed the variable R as it was not used
@@ -9,17 +9,26 @@ def plot_cm(cm, classes, figsize=(10, 10), title=False):
     textargs = {"fontname": "Serif"}
 
     # Normalize confusion matrix and set image parameters
-    cm = cm.astype("float") / np.nansum(cm, axis=1)[:, np.newaxis]
+    if normalize:
+        cm = cm.astype("float") / np.nansum(cm, axis=1)[:, np.newaxis]
+    else:
+        cm = np.round(cm.astype("float"))
     off_diag = ~np.eye(cm.shape[0], dtype=bool)
     cm[off_diag] *= -1
     fig, ax = plt.subplots(figsize=figsize)
+    
+    if normalize:
+        im = ax.imshow(cm, interpolation="none", cmap="RdBu", vmin=-1, vmax=1)
+    else:
+        im = ax.imshow(cm, interpolation="none", cmap="RdBu")
 
-    im = ax.imshow(cm, interpolation="none", cmap="RdBu", vmin=-1, vmax=1)
-
-    cbticks = np.linspace(-1, 1, num=9)
-    cbticklabels = ["100%", "75%", "50%", "25%", "0%", "25%", "50%", "75%", "100%"]
-    cb = plt.colorbar(im, shrink=0.82)
-    cb.set_ticks(cbticks, labels=cbticklabels, fontsize= 12, **textargs)
+    if normalize:
+        cbticks = np.linspace(-1, 1, num=9)
+        cbticklabels = ["100%", "75%", "50%", "25%", "0%", "25%", "50%", "75%", "100%"]
+        cb = plt.colorbar(im, shrink=0.82)
+        cb.set_ticks(cbticks, labels=cbticklabels, fontsize= 12, **textargs)
+    else:
+        cb = plt.colorbar(im, shrink=0.82)
 
     if title:
         ax.set_title(title, **textargs, fontsize=15)

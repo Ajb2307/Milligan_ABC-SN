@@ -124,29 +124,33 @@ subtype_to_ABC_ID= {
 }
 
 
-
-ABC_ID_dict ={"Ia": 0,
-          "Iap": 0,
-          "Ic": 7,
-          "Ib": 4,
+# takes in the SN subtype string given by milligan and returns the corresponding ABC ID
+ABC_ID_dict ={"Ia": 0, # Ia-norm
+          "Iap": 1, # Ia-91T ##### issue changed from 0 to 1 to match the ABC_subtype_id_to_str dictionary
+          "Ic": 7, # Ic-norm
+          "Ib": 4, # Ib-norm
           "II": 9, # IIP = type 2 plateau = normal
-          "IIb": 6,
-          "IIn": 9,
+          "IIb": 6, # IIb
+          "IIn": None, # no corresponding ABC ID 
           "SL": None,
           "TDE": None,
-          "CRT": None
+          "CRT": None,
+          "CaRT": None
           }
 
-Mill_ID_dict ={"Ia": 0,
-          "Iap": 0,
-          "Ic": 1,
-          "Ib": 1,
+# given the SN subtype string from milligan, returns the corresponding Milligan ID
+# IDs used in Milligan to evaluate preformance 
+Mill_ID_dict ={"Ia": 0, # Ia-norm
+          "Iap": 0, # Ia-norm
+          "Ic": 1, # Ib & Ic
+          "Ib": 1, # Ib & Ic
           "II": 2, # IIP = type 2 plateau = normal
-          "IIb": 1,
-          "IIn": 2,
-          "SL": 3,
-          "TDE": 4,
-          "CRT": 4
+          "IIb": 1, # Ib & Ic
+          "IIn": 2, # II
+          "SL": 3, # SLSN
+          "TDE": 4, # Non-SN
+          "CRT": 4, # Non-SN
+          "CaRT": 4  # Non-SN
           }
 
 # five types recorded in Milligan et al.
@@ -170,6 +174,17 @@ ABC_to_Mill ={0:0,   # Ia-norm -> Ia
               8:1,  # Ic-broad -> Ib & Ic
               9:2,  # IIP -> II
             }
+def get_Mill_ID_dict():   
+    """Returns the dictionary mapping Milligan types to integers."""
+    return Mill_types_to_int
+
+def get_ABC_to_Mill_dict():
+    """Returns the dictionary mapping ABC types to Milligan categories."""
+    return ABC_to_Mill
+
+def get_ABC_ID_dict():
+    """Returns the dictionary mapping SN subtypes to ABC IDs."""
+    return ABC_subtype_id_to_str
 
 def get_ABC_Mill_type(SN_subtype_str):
     """Converts ABC type to Milligan category."""

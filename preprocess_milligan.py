@@ -126,7 +126,7 @@ def enforce_positive_flux(
     if f.size == 0:
         return f.copy(), 0.0
 
-    #find the start of the nonzero flux values
+    # find the start of the nonzero flux values
     flux_indices = np.where(~np.isclose(f, 0.0, atol=1e-16))[0]
     flux_start, flux_stop = flux_indices[0], flux_indices[-1]
     

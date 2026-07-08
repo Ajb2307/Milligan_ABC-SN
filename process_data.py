@@ -12,12 +12,7 @@ import abcsn_training
 import abcsn_config
 from preprocessing import preproccess_dataframe
 
-sys.path.insert(0, "/lustre/lrspec/users/4301/snidpy/sourcepy")
-from apodize import *
-from logwave import Logwave as lw
-from logwave import log_rebin
 
-lw.mean_zero = meanzero # wonder if this will fix annoying print
 
 host_types = ["elliptical", "s0", "sa", "sb", "sc", "starb1", "starb1", "starb2", "starb3", "starb4", "starb5", "starb6"]
 # needs to go longest to shortest so it doesnt find II instead of IIb

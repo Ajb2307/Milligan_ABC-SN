@@ -3,3 +3,8 @@
 .DS_Store
 settings.json
 /data
+/models
+/model_results 
+notebooks/.ipynb_checkpoints/
+*.keras 
+*.png

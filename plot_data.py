@@ -43,9 +43,9 @@ def plot_cm(cm, classes, figsize=(10, 10), title=False, normalize=True):
             elif np.isnan(val):
                 text = "" # Handle NaN values
             elif val == 1:
-                text = "100"
+                text = "100 %"
             else:
-                text = f"{val*100:.1f}"
+                text = f"{val:.1%}"
             color = "w" if val >= 0.50 else "k"
             ax.text(
                 j, i, text,

@@ -7,7 +7,7 @@ import hxetda
 import matplotlib.pyplot as plt
 
 class WeightedHierchicalLoss_hxetda(tf.keras.losses.Loss):
-    def __init__(self, mask_list, pathlengths, class_weights, alpha = 0.5, epsilon=1e-10, 
+    def __init__(self, mask_list, pathlengths, class_weights = None, alpha = 0.5, epsilon=1e-10, 
                  name="weighted_hierchical_loss", **kwargs):
         super().__init__(name=name, **kwargs)
         self.mask_list = mask_list
@@ -26,9 +26,10 @@ class WeightedHierchicalLoss_hxetda(tf.keras.losses.Loss):
         final_vec = masked_exps/masked_sums + ((1-mask) * vec)
         return final_vec
     
-    def call(self, y_true, y_pred):
+    def call(self, y_true, y_pred, sample_weight=None):
         final_sum = 0
         # Convert tensors to float32
+        y_true = tf.cast(y_true, tf.float32)
         y_pred = tf.cast(y_pred, tf.float32)
         # Set first column to 1.0 (can't do in-place assignment)
         output = tf.concat([tf.ones_like(y_pred[:, :1]), y_pred[:, 1:]], axis=1)
@@ -44,7 +45,17 @@ class WeightedHierchicalLoss_hxetda(tf.keras.losses.Loss):
     
         # this gives us W(c_h) * {log[p(c_h|c_(h+1))] * λ(c)}
         # W(c_h) weights each class by its class fraction 
-        output = output * self.class_weights 
+        if self.class_weights is not None:
+            output = output * self.class_weights 
+        
+        # Apply sample weights if provided
+        if sample_weight is not None:
+            # Ensure sample_weight has correct shape
+            sample_weight = tf.cast(sample_weight, dtype=output.dtype)
+            # Expand dims if needed for broadcasting
+            if len(sample_weight.shape) < len(output.shape):
+                sample_weight = tf.expand_dims(sample_weight, axis=-1)
+            output = output * sample_weight
 
         # finally ({W(c_h) * log[p(c_h|c_(h+1))] * λ(c)} * y_true)
         output = tf.reduce_sum((output * y_true), axis=1)
@@ -59,7 +70,7 @@ class WeightedHierchicalLoss_hxetda(tf.keras.losses.Loss):
             'alpha': self.alpha,
             'epsilon': self.epsilon,
             'mask_list': self.mask_list,
-            'class_weights': self.sample_weights,
+            'class_weights': self.class_weights,
         }
         base_config = super().get_config()
         return {**base_config, **config}

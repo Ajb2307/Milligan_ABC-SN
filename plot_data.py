@@ -56,3 +56,81 @@ def plot_cm(cm, classes, figsize=(10, 10), title=False, normalize=True):
     ax.set_xlabel("Predicted label", fontsize=20, **textargs)
 
     return fig
+
+def graph_names(epochs, dataset_name, train_test_validation, weighted= False, balanced = False, notes=None):
+    """
+    Generates standard names for a file and a graph title.
+
+    Parameters:
+    - epochs (int): Number of epochs trained
+    - weighted (bool): Whether weighted loss/weights were applied
+    - balanced (bool): Whether balanced datasets were used
+    - dataset_name (str): Name of the training dataset
+    - training_test (str): "training", "testing", or "validation"
+    - notes (str, optional): Additional notes to include in the graph title. Defaults to None.
+
+    Returns:
+    - filename (str): Suitable name for saving a file (CSV/Keras/PNG)
+    - graph_title (str): Clean and informative title for plots
+    """
+
+    assert weighted == True or weighted == False, "weighted must be True or False"
+    assert balanced == True or balanced == False, "balanced must be True or False"
+    assert sum([weighted, balanced]) != 2, "weighted and balanced cannot both be True"
+
+    assert train_test_validation.lower() in ["training", "testing", "validation"], "train_test must be 'training', 'testing', or 'validation'"
+    assert type(dataset_name) == str, "dataset_name must be a string"
+    assert type(epochs) == int, "epochs must be an integer"
+
+    weight_str = "weighted" if weighted else ""
+    balance_str = "balanced" if balanced else ""
+    weight_balence_str = weight_str + balance_str
+
+    # Generate a clean, snake_case filename
+    filename = f"{dataset_name.lower().replace(' ', '_')}_{weight_balence_str}_{epochs}epochs_{train_test_validation.lower()}"
+
+    # Generate a clean, human-readable graph title
+    graph_title = f"{dataset_name.capitalize()} {train_test_validation.capitalize()} Data | Epochs: {epochs} | {weight_balence_str.capitalize()}"
+
+    if notes is not None:
+        assert type(notes) == str, "notes must be a string or None"
+        graph_title += f" \n {notes}"
+
+    return filename, graph_title
+
+
+def model_name(epochs, dataset_name, weighted= False, balanced = False, notes=None):
+    """
+    Generates standard names for a file and a graph title.
+
+    Parameters:
+    - epochs (int): Number of epochs trained
+    - weighted (bool): Whether weighted loss/weights were applied
+    - balanced (bool): Whether balanced datasets were used
+    - dataset_name (str): Name of the training dataset
+    - notes (str, optional): Additional notes to include in the graph title. Defaults to None.
+
+    Returns:
+    - filename (str): Suitable name for saving a file (CSV/Keras/PNG)
+    """
+
+    assert weighted == True or weighted == False, "weighted must be True or False"
+    assert balanced == True or balanced == False, "balanced must be True or False"
+    assert sum([weighted, balanced]) != 2, "weighted and balanced cannot both be True"
+    assert type(dataset_name) == str, "dataset_name must be a string"
+    assert type(epochs) == int, "epochs must be an integer"
+
+    weight_str = "weighted" if weighted else ""
+    balance_str = "balanced" if balanced else ""
+    weight_balence_str = weight_str + balance_str
+    dataset_name = dataset_name.lower().replace(' ', '_')
+
+    # Generate a clean, snake_case filename
+    filename_list = [dataset_name, weight_balence_str, str(epochs)]
+    if notes is not None:
+        assert type(notes) == str, "notes must be a string or None"
+        notes = notes.replace(" ", "_")
+        filename_list.append(notes)
+    filename = "_".join(filename_list)
+
+    return filename
